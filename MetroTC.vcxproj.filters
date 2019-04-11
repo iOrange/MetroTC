@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{b791d12f-8b62-47f4-8b54-78e605208859}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{40d7d6c1-bcb3-4d8b-a699-ac9c95a41ab9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\bc7enc16">
+      <UniqueIdentifier>{e516ed0d-c2ca-4e16-bb42-313879569752}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\lz4">
+      <UniqueIdentifier>{61663808-7891-4d8a-8f17-9c89d3923a57}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Application.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MainForm.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\bc7enc16\bc7decomp.c">
+      <Filter>libs\bc7enc16</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dds_utils.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\lz4\lz4.c">
+      <Filter>libs\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ChooseFolderDlg.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="src\MainForm.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\bc7enc16\bc7decomp.h">
+      <Filter>libs\bc7enc16</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\lz4\lz4.h">
+      <Filter>libs\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ChooseFolderDlg.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mycommon.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MetroTC.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon.ico" />
+  </ItemGroup>
+</Project>

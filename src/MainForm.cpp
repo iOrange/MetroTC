@@ -84,6 +84,10 @@ int MainForm::DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
                     this->OnChooseFolderButton();
                 } break;
 
+                case IDC_BUTTON_DST_FOLDER: {
+                    this->OnChooseFolderButton();
+                } break;
+
                 case IDC_BUTTON_CONVERT: {
                     this->OnConvertButton();
                 } break;
@@ -127,6 +131,20 @@ void MainForm::OnEditPathTextChanged() {
     ::EnableWindow(mBtnConvert, entry.exists() ? TRUE : FALSE);
 }
 
+void MainForm::OnTargetPathTextChanged() {
+
+}
+
+void MainForm::OnCheckTargetSameAsSourceChanged() {
+    if (this->IsTargetPathSameAsSource()) {
+        ::EnableWindow(mEditTargetPath, FALSE);
+        this->SetEditTargetPathText(this->GetEditPathText());
+    } else {
+        ::EnableWindow(mEditTargetPath, TRUE);
+        this->OnTargetPathTextChanged();
+    }
+}
+
 void MainForm::OnChooseOneFileButton() {
     WCHAR szFile[2048] = { 0 };
     OPENFILENAME ofn = { 0 };
@@ -148,6 +166,13 @@ void MainForm::OnChooseFolderButton() {
     fs::path path = ChooseFolderDialog::ChooseFolder(L"Select folder with Metro textures", mForm);
     if (!path.empty()) {
         this->SetEditPathText(path.native());
+    }
+}
+
+void MainForm::OnChooseTargetFolderButton() {
+    fs::path path = ChooseFolderDialog::ChooseFolder(L"Select the destination folder", mForm);
+    if (!path.empty()) {
+        this->SetEditTargetPathText(path.native());
     }
 }
 
@@ -180,21 +205,25 @@ void MainForm::InitComponents() {
     }
 
     // radio buttons
-    mRadio2033          = ::GetDlgItem(mForm, IDC_RADIO_2033);
-    mRadioLL            = ::GetDlgItem(mForm, IDC_RADIO_LASTLIGHT);
-    mRadioExodus        = ::GetDlgItem(mForm, IDC_RADIO_EXODUS);
-    // buttons to choose source
-    mBtnChooseOneFile   = ::GetDlgItem(mForm, IDC_BUTTON_ONEFILE);
-    mBtnChooseFolder    = ::GetDlgItem(mForm, IDC_BUTTON_FOLDER);
+    mRadio2033                  = ::GetDlgItem(mForm, IDC_RADIO_2033);
+    mRadioLL                    = ::GetDlgItem(mForm, IDC_RADIO_LASTLIGHT);
+    mRadioExodus                = ::GetDlgItem(mForm, IDC_RADIO_EXODUS);
+    // buttons to choose source / dest
+    mBtnChooseOneFile           = ::GetDlgItem(mForm, IDC_BUTTON_ONEFILE);
+    mBtnChooseFolder            = ::GetDlgItem(mForm, IDC_BUTTON_FOLDER);
+    mBtnChooseTargetFolder      = ::GetDlgItem(mForm, IDC_BUTTON_DST_FOLDER);
     // path and progress
-    mEditPath           = ::GetDlgItem(mForm, IDC_EDIT_PATH);
-    mProgressBar        = ::GetDlgItem(mForm, IDC_PROGRESS_BAR);
+    mEditPath                   = ::GetDlgItem(mForm, IDC_EDIT_PATH);
+    mCheckWithSubfolders        = ::GetDlgItem(mForm, IDC_CHECK_WITH_SUBFOLDERS);
+    mEditTargetPath             = ::GetDlgItem(mForm, IDC_EDIT_DEST_PATH);
+    mCheckTargetSameAsSource    = ::GetDlgItem(mForm, IDC_CHECK_DST_SAME_AS_SRC);
+    mProgressBar                = ::GetDlgItem(mForm, IDC_PROGRESS_BAR);
     // buttons to stop, convert and exit
-    mBtnStop            = ::GetDlgItem(mForm, IDC_BUTTON_STOP);
-    mBtnConvert         = ::GetDlgItem(mForm, IDC_BUTTON_CONVERT);
-    mBtnExit            = ::GetDlgItem(mForm, IDC_BUTTON_EXIT);
+    mBtnStop                    = ::GetDlgItem(mForm, IDC_BUTTON_STOP);
+    mBtnConvert                 = ::GetDlgItem(mForm, IDC_BUTTON_CONVERT);
+    mBtnExit                    = ::GetDlgItem(mForm, IDC_BUTTON_EXIT);
     // about button
-    mBtnAbout           = ::GetDlgItem(mForm, IDC_BUTTON_ABOUT);
+    mBtnAbout                   = ::GetDlgItem(mForm, IDC_BUTTON_ABOUT);
 
     ::EnableWindow(mBtnStop, FALSE);
     ::EnableWindow(mBtnConvert, FALSE);
@@ -228,8 +257,34 @@ void MainForm::SetEditPathText(const std::wstring& text) const {
     ::SetWindowText(mEditPath, text.c_str());
 }
 
+const std::wstring& MainForm::GetEditTargetPathText() const {
+    static std::wstring str;
+
+    WCHAR text[2048] = { 0 };
+    ::GetWindowText(mEditTargetPath, text, 2047);
+
+    str.assign(text);
+
+    return str;
+}
+
+void MainForm::SetEditTargetPathText(const std::wstring& text) const {
+    ::SetWindowText(mEditTargetPath, text.c_str());
+}
+
+bool MainForm::IsTargetPathSameAsSource() const {
+    return ::IsDlgButtonChecked(mForm, IDC_CHECK_DST_SAME_AS_SRC) == TRUE;
+}
+
 void MainForm::ChangeUI(const bool conversionStarted) {
     ::EnableWindow(mEditPath, conversionStarted ? FALSE : TRUE);
+
+    if (conversionStarted) {
+        ::EnableWindow(mEditTargetPath, FALSE);
+        ::EnableWindow(mCheckTargetSameAsSource, FALSE);
+    } else {
+        this->OnCheckTargetSameAsSourceChanged();
+    }
 
     ::EnableWindow(mBtnStop, conversionStarted ? TRUE : FALSE);
     ::EnableWindow(mBtnConvert, conversionStarted ? FALSE : TRUE);

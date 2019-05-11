@@ -27,6 +27,7 @@ private:
     const std::wstring& GetEditTargetPathText() const;
     void                SetEditTargetPathText(const std::wstring& text) const;
 
+    bool                IsSubfoldersIncluded() const;
     bool                IsTargetPathSameAsSource() const;
 
     void                OnEditPathTextChanged();
@@ -40,13 +41,14 @@ private:
     void                OnExitButton();
     void                OnAboutButton();
 
+    void                CheckPaths();
     void                ChangeUI(const bool conversionStarted);
     void                ShowMessage(const std::wstring& message, const bool isError = false);
 
     // conversion
     void                Convert();
-    bool                ConvertOneFile(const fs::path& path);
-    void                ConvertFolder(const fs::path& path);
+    bool                ConvertOneFile(const fs::path& path, const fs::path& dstFolder = fs::path());
+    void                ConvertFolder(const fs::path& path, const fs::path& dstPath, const bool withSubfolders);
 
 private:
     // form

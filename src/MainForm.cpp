@@ -3,6 +3,7 @@
 #include <Commctrl.h>
 #include "../resource.h"
 #include "ChooseFolderDlg.h"
+#include "Hyperlinks.h"
 
 #include <lz4/lz4.h>
 #include <crunch/inc/crn_decomp.h>
@@ -76,6 +77,16 @@ int MainForm::DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
                     }
                 } break;
 
+                case IDC_EDIT_DEST_PATH: {
+                    if (command == EN_CHANGE) {
+                        this->OnTargetPathTextChanged();
+                    }
+                } break;
+
+                case IDC_CHECK_DST_SAME_AS_SRC: {
+                    this->OnCheckTargetSameAsSourceChanged();
+                } break;
+
                 case IDC_BUTTON_ONEFILE: {
                     this->OnChooseOneFileButton();
                 } break;
@@ -85,7 +96,7 @@ int MainForm::DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
                 } break;
 
                 case IDC_BUTTON_DST_FOLDER: {
-                    this->OnChooseFolderButton();
+                    this->OnChooseTargetFolderButton();
                 } break;
 
                 case IDC_BUTTON_CONVERT: {
@@ -103,6 +114,12 @@ int MainForm::DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
                 case IDC_BUTTON_ABOUT: {
                     this->OnAboutButton();
                 } break;
+
+                case IDC_STATIC_GAMERU: {
+                    ShellExecute(hDlg, TEXT("open"), TEXT("https://www.gameru.net"), nullptr, nullptr, SW_SHOWNORMAL);
+                    return TRUE;
+                } break;
+
             }
         } break;
 
@@ -124,23 +141,25 @@ int MainForm::DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 void MainForm::OnEditPathTextChanged() {
-    const std::wstring& text = this->GetEditPathText();
+    if (this->IsTargetPathSameAsSource()) {
+        this->SetEditTargetPathText(this->GetEditPathText());
+    }
 
-    std::error_code err;
-    fs::directory_entry entry(text, err);
-    ::EnableWindow(mBtnConvert, entry.exists() ? TRUE : FALSE);
+    this->CheckPaths();
 }
 
 void MainForm::OnTargetPathTextChanged() {
-
+    this->CheckPaths();
 }
 
 void MainForm::OnCheckTargetSameAsSourceChanged() {
     if (this->IsTargetPathSameAsSource()) {
         ::EnableWindow(mEditTargetPath, FALSE);
+        ::EnableWindow(mBtnChooseTargetFolder, FALSE);
         this->SetEditTargetPathText(this->GetEditPathText());
     } else {
         ::EnableWindow(mEditTargetPath, TRUE);
+        ::EnableWindow(mBtnChooseTargetFolder, TRUE);
         this->OnTargetPathTextChanged();
     }
 }
@@ -225,10 +244,16 @@ void MainForm::InitComponents() {
     // about button
     mBtnAbout                   = ::GetDlgItem(mForm, IDC_BUTTON_ABOUT);
 
+    ::CheckDlgButton(mForm, IDC_CHECK_DST_SAME_AS_SRC, TRUE);
+    this->OnCheckTargetSameAsSourceChanged();
+
     ::EnableWindow(mBtnStop, FALSE);
     ::EnableWindow(mBtnConvert, FALSE);
 
     ::CheckRadioButton(mForm, IDC_RADIO_2033, IDC_RADIO_EXODUS, IDC_RADIO_2033);
+
+
+    ConvertStaticToHyperlink(mForm, IDC_STATIC_GAMERU);
 }
 
 const std::wstring& MainForm::GetFormTitle() const {
@@ -272,8 +297,30 @@ void MainForm::SetEditTargetPathText(const std::wstring& text) const {
     ::SetWindowText(mEditTargetPath, text.c_str());
 }
 
+bool MainForm::IsSubfoldersIncluded() const {
+    return ::IsDlgButtonChecked(mForm, IDC_CHECK_WITH_SUBFOLDERS) == TRUE;
+}
+
 bool MainForm::IsTargetPathSameAsSource() const {
     return ::IsDlgButtonChecked(mForm, IDC_CHECK_DST_SAME_AS_SRC) == TRUE;
+}
+
+void MainForm::CheckPaths() {
+    bool srcPathOk = false, dstPathOk = true;
+
+    const std::wstring& srcPath = this->GetEditPathText();
+
+    std::error_code err;
+    fs::directory_entry srcEntry(srcPath, err);
+    srcPathOk = srcEntry.exists();
+
+    if (!this->IsTargetPathSameAsSource()) {
+        const std::wstring& dstPath = this->GetEditTargetPathText();
+        fs::directory_entry dstEntry(dstPath, err);
+        dstPathOk = dstEntry.exists();
+    }
+
+    ::EnableWindow(mBtnConvert, (srcPathOk && dstPathOk) ? TRUE : FALSE);
 }
 
 void MainForm::ChangeUI(const bool conversionStarted) {
@@ -282,7 +329,9 @@ void MainForm::ChangeUI(const bool conversionStarted) {
     if (conversionStarted) {
         ::EnableWindow(mEditTargetPath, FALSE);
         ::EnableWindow(mCheckTargetSameAsSource, FALSE);
+        ::EnableWindow(mBtnChooseTargetFolder, FALSE);
     } else {
+        ::EnableWindow(mCheckTargetSameAsSource, TRUE);
         this->OnCheckTargetSameAsSourceChanged();
     }
 
@@ -313,25 +362,26 @@ void MainForm::Convert() {
         mMetroVersion = MetroVersion::Exodus;
     }
 
-    const std::wstring& text = this->GetEditPathText();
+    const std::wstring& srcText = this->GetEditPathText();
+    const std::wstring& dstText = this->GetEditTargetPathText();
 
     std::error_code err;
-    fs::path path(text);
-    fs::directory_entry entry(path, err);
-    if (entry.exists()) {
-        if (entry.is_regular_file()) {
-            if (!this->ConvertOneFile(path)) {
-                this->ShowMessage(L"Failed to convert:\r\n" + text, true);
+    fs::path srcPath(srcText), dstPath(dstText);
+    fs::directory_entry srcEntry(srcPath, err), dstEntry(dstPath, err);
+    if (srcEntry.exists()) {
+        if (srcEntry.is_regular_file()) {
+            if (!this->ConvertOneFile(srcPath)) {
+                this->ShowMessage(L"Failed to convert:\r\n" + srcText, true);
             } else {
-                this->ShowMessage(L"Successfully converted:\r\n" + text);
+                this->ShowMessage(L"Successfully converted:\r\n" + srcText);
             }
         } else {
-            mThread = std::thread([this, path]() {
+            mThread = std::thread([this, srcPath, dstPath]() {
                 mStopRequested = false;
                 mConversionInProgress = true;
 
                 this->ChangeUI(true);
-                this->ConvertFolder(path);
+                this->ConvertFolder(srcPath, dstPath, this->IsSubfoldersIncluded());
                 this->ChangeUI(false);
 
                 mConversionInProgress = false;
@@ -482,17 +532,22 @@ static size_t NumMipsFromResolution(const size_t resolution) {
     return result;
 }
 
-bool MainForm::ConvertOneFile(const fs::path& path) {
+bool MainForm::ConvertOneFile(const fs::path& path, const fs::path& dstFolder) {
     bool result = false;
 
     const std::wstring& pathStr = path.native();
+
+    fs::path outFolder = dstFolder.empty() ? path.parent_path() : dstFolder;
+
     const std::wstring textureBaseName = path.parent_path() / path.stem();
-    fs::path ddsPath(textureBaseName + L".dds");
+
+    const std::wstring outBaseName = outFolder / path.stem();
+    fs::path outputPath(outBaseName + L".dds");
 
     const bool isCrunched = (pathStr.back() == L'c');
 
     std::error_code err;
-    fs::directory_entry fileDDS(ddsPath, err);
+    fs::directory_entry fileDDS(outputPath, err);
     if (fileDDS.exists()) {
         return true;
     }
@@ -514,7 +569,7 @@ bool MainForm::ConvertOneFile(const fs::path& path) {
         const TextureFormat format = (mMetroVersion == MetroVersion::Exodus ? TextureFormat::BC7 :
                                      (data512.size() == 174776 ? TextureFormat::BC1 : TextureFormat::BC3));
 
-        std::ofstream file(ddsPath, std::ofstream::binary);
+        std::ofstream file(outputPath, std::ofstream::binary);
         if (file.good()) {
             file.write(reinterpret_cast<const char*>(&cDDSFileSignature), sizeof(cDDSFileSignature));
 
@@ -544,8 +599,10 @@ bool MainForm::ConvertOneFile(const fs::path& path) {
     return result;
 }
 
-void MainForm::ConvertFolder(const fs::path& path) {
+void MainForm::ConvertFolder(const fs::path& path, const fs::path& dstPath, const bool withSubfolders) {
     std::error_code err;
+
+    const bool targetSameAsSource = fs::equivalent(path, dstPath);
 
     std::queue<fs::directory_entry> folders;
     folders.push(fs::directory_entry(path, err));
@@ -562,7 +619,7 @@ void MainForm::ConvertFolder(const fs::path& path) {
                     if (extension == L".512" || extension == L".512c") {
                         files.push_back(subEntry);
                     }
-                } else if (subEntry.is_directory()) {
+                } else if (subEntry.is_directory() && withSubfolders) {
                     folders.push(subEntry);
                 }
             }
@@ -578,7 +635,17 @@ void MainForm::ConvertFolder(const fs::path& path) {
     ::SendMessage(mProgressBar, PBM_SETSTEP, 1, 0);
 
     for (const fs::directory_entry& file : files) {
-        this->ConvertOneFile(file.path());
+        fs::path fileSourcePath = file.path();
+
+        fs::path fileDestFolder = fileSourcePath.parent_path();
+        if (!targetSameAsSource) {
+            fs::path relPath = fs::relative(fileDestFolder, path);
+            fileDestFolder = fs::absolute(dstPath / relPath);
+
+            fs::create_directories(fileDestFolder, err);
+        }
+
+        this->ConvertOneFile(file.path(), fileDestFolder);
         ::SendMessage(mProgressBar, PBM_STEPIT, 0, 0);
 
         if (mStopRequested) {

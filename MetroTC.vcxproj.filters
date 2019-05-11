@@ -33,6 +33,9 @@
     <ClCompile Include="src\ChooseFolderDlg.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Hyperlinks.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -49,6 +52,12 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\mycommon.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dds_utils.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hyperlinks.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
